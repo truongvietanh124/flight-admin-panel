@@ -1,6 +1,8 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
+// Import plugin typescript-eslint
+import tseslint from '@typescript-eslint/eslint-plugin';
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -11,25 +13,24 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-    // Kế thừa các cấu hình gốc từ Next.js
-    ...compat.extends("next/core-web-vitals"), // Thường thì cái này đã đủ cho cả TS
+    ...compat.extends("next/core-web-vitals"),
 
-    // Thêm đối tượng này để ghi đè hoặc cấu hình thêm các quy tắc
     {
+        // Khai báo plugin ở đây
+        plugins: {
+            '@typescript-eslint': tseslint,
+        },
         rules: {
-            // Ví dụ: Chuyển lỗi 'no-explicit-any' thành cảnh báo (warning)
+            // Bây giờ ESLint mới biết quy tắc này thuộc plugin nào
             "@typescript-eslint/no-explicit-any": "warn",
-
-            // Ví dụ: Chuyển lỗi 'no-unused-vars' thành cảnh báo (warning)
             "@typescript-eslint/no-unused-vars": [
-                "warn", // Mức độ: "warn" hoặc "off" để tắt hẳn
+                "warn",
                 {
-                    argsIgnorePattern: "^_", // Vẫn bỏ qua biến bắt đầu bằng '_'
-                    varsIgnorePattern: "^_", // Vẫn bỏ qua biến bắt đầu bằng '_'
+                    argsIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
                 }
             ],
-
-            // Bạn có thể thêm các quy tắc tùy chỉnh khác ở đây
+            // ... các quy tắc khác nếu có
         }
     }
 ];
