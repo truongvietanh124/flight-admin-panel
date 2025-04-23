@@ -78,9 +78,21 @@ export default function AdministratorsPage() {
                     setIsUploading(false);
                     // --- SAU KHI CÓ URL, GỌI API TẠO ADMIN ---
                     await createAdminOnBackend(email, downloadURL);
-                } catch(getUrlError) {
+                } catch (getUrlError) { // getUrlError có kiểu unknown
                     console.error("Failed to get download URL:", getUrlError);
-                    setError(`Lỗi lấy URL ảnh: ${getUrlError.message}`);
+                
+                    // Kiểm tra kiểu trước khi truy cập .message
+                    let errorMessage = "Lỗi không xác định khi lấy URL ảnh.";
+                    if (getUrlError instanceof Error) {
+                        // Nếu đúng là Error, giờ mới truy cập .message an toàn
+                        errorMessage = `Lỗi lấy URL ảnh: ${getUrlError.message}`;
+                    } else if (typeof getUrlError === 'string') {
+                        // Hoặc xử lý trường hợp lỗi là một chuỗi
+                         errorMessage = `Lỗi lấy URL ảnh: ${getUrlError}`;
+                    }
+                    // ... các trường hợp khác nếu cần ...
+                
+                    setError(errorMessage); // Sử dụng thông báo lỗi đã được xử lý
                     setIsUploading(false);
                 }
             }
