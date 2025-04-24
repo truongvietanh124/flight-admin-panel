@@ -1,4 +1,3 @@
-// src/app/admin/flights/create/page.tsx
 'use client';
 
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
@@ -12,7 +11,7 @@ import FormControl from '@mui/material/FormControl';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid';
+// import Grid from '@mui/material/Grid'; // <<< ĐÃ XÓA IMPORT GRID
 
 // --- Interfaces ---
 interface FlightFormData {
@@ -35,7 +34,7 @@ interface Airline {
     Name: string;
 }
 
-interface LocationData { // <<< THÊM INTERFACE CHO LOCATION
+interface LocationData {
     Id: number | string;
     Name: string;
 }
@@ -53,8 +52,8 @@ export default function CreateFlightPage() {
   const [airlines, setAirlines] = useState<Airline[]>([]);
   const [loadingAirlines, setLoadingAirlines] = useState(true);
 
-  const [locations, setLocations] = useState<LocationData[]>([]); // <<< STATE CHO LOCATIONS
-  const [loadingLocations, setLoadingLocations] = useState(true); // <<< STATE LOADING LOCATIONS
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
 
   // --- Fetch Data ---
   useEffect(() => {
@@ -70,14 +69,14 @@ export default function CreateFlightPage() {
       finally { setLoadingAirlines(false); }
 
       // Fetch Locations
-      setLoadingLocations(true); // <<< BẮT ĐẦU LOADING LOCATIONS
+      setLoadingLocations(true);
       try {
-        const locationRes = await fetch('/api/locations'); // <<< GỌI API LOCATIONS
+        const locationRes = await fetch('/api/locations');
         if (!locationRes.ok) throw new Error('Failed to fetch locations');
         const locationData: LocationData[] = await locationRes.json();
-        setLocations(locationData); // <<< CẬP NHẬT STATE LOCATIONS
+        setLocations(locationData);
       } catch (err) { console.error("Error fetching locations:", err); }
-      finally { setLoadingLocations(false); } // <<< KẾT THÚC LOADING LOCATIONS
+      finally { setLoadingLocations(false); }
     };
 
     fetchData();
@@ -106,21 +105,34 @@ export default function CreateFlightPage() {
       if (!response.ok) { throw new Error(result.details || result.error || `HTTP error! status: ${response.status}`); }
       console.log('API response success:', result);
       setSuccessMessage(`Chuyến bay đã được tạo thành công! ID: ${result.flightId}`);
+      // Reset form
       setFormData({ airlineLogo: '', airlineName: '', arriveTime: '', classSeat: 'Economy Class', date: '', from: '', fromShort: '', numberSeat: '', price: '', time: '', to: '', toShort: '' });
-    } catch (err: any) { console.error('Error submitting form:', err); setError(err.message || 'Đã có lỗi xảy ra khi tạo chuyến bay.'); }
+    } catch (err: any) { // Sử dụng any ở đây hoặc kiểm tra lỗi cụ thể hơn
+        console.error('Error submitting form:', err);
+        let message = 'Đã có lỗi xảy ra khi tạo chuyến bay.';
+        if (err instanceof Error) {
+            message = err.message;
+        } else if (typeof err === 'string') {
+            message = err;
+        }
+        setError(message);
+    }
     finally { setIsLoading(false); }
   };
 
-  // --- JSX ---
+  // --- JSX (Sử dụng Box và Flexbox thay cho Grid) ---
   return (
     <Box sx={{ maxWidth: '800px', margin: '2rem auto', p: 3, border: '1px solid #ccc', borderRadius: 2, boxShadow: 1 }}>
       <Typography variant="h4" component="h1" gutterBottom> Tạo chuyến bay mới </Typography>
       <form onSubmit={handleSubmit}>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
-        <Grid container spacing={2}>
-          {/* Hãng Bay */}
-          <Grid item xs={12} sm={6}>
+
+        {/* Container chính sử dụng Flexbox */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}> {/* gap: 2 tương đương spacing={2} */}
+
+          {/* Hãng Bay - chiếm 50% chiều rộng trên màn hình sm trở lên */}
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}> {/* 8px là một nửa của gap={2} (16px) */}
             <FormControl fullWidth margin="normal" required disabled={loadingAirlines}>
               <InputLabel id="airlineName-label">Tên Hãng bay</InputLabel>
               <Select labelId="airlineName-label" id="airlineName" name="airlineName" value={formData.airlineName} label="Tên Hãng bay" onChange={handleSelectChange}>
@@ -128,49 +140,74 @@ export default function CreateFlightPage() {
                 {!loadingAirlines && airlines.map((airline) => ( <MenuItem key={airline.Id} value={airline.Name}> {airline.Name} </MenuItem> ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
             <TextField label="URL Logo Hãng bay" name="airlineLogo" type="url" value={formData.airlineLogo} onChange={handleChange} fullWidth required margin="normal"/>
-          </Grid>
-          {/* Thời gian */}
-          <Grid item xs={12} sm={4}> <TextField label="Giờ khởi hành" name="time" type="time" value={formData.time} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} /> </Grid>
-          <Grid item xs={12} sm={4}> <TextField label="Giờ đến" name="arriveTime" type="time" value={formData.arriveTime} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} /> </Grid>
-          <Grid item xs={12} sm={4}> <TextField label="Ngày bay" name="date" type="date" value={formData.date} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} /> </Grid>
+          </Box>
 
-          {/* --- CẬP NHẬT ĐỊA ĐIỂM --- */}
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth margin="normal" required disabled={loadingLocations}> {/* <<< THÊM FormControl */}
+          {/* Thời gian - mỗi ô chiếm 1/3 chiều rộng trên màn hình sm trở lên */}
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}> {/* 11px ~ 2/3 của gap */}
+             <TextField label="Giờ khởi hành" name="time" type="time" value={formData.time} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} />
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}>
+            <TextField label="Giờ đến" name="arriveTime" type="time" value={formData.arriveTime} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} />
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}>
+            <TextField label="Ngày bay" name="date" type="date" value={formData.date} onChange={handleChange} fullWidth required margin="normal" InputLabelProps={{ shrink: true }} />
+          </Box>
+
+          {/* --- ĐỊA ĐIỂM --- */}
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+            <FormControl fullWidth margin="normal" required disabled={loadingLocations}>
               <InputLabel id="from-label">Điểm đi</InputLabel>
               <Select labelId="from-label" id="from" name="from" value={formData.from} label="Điểm đi" onChange={handleSelectChange} >
                 <MenuItem value="" disabled> {loadingLocations ? 'Đang tải...' : '-- Chọn Điểm Đi --'} </MenuItem>
                 {!loadingLocations && locations.map((loc) => ( <MenuItem key={loc.Id} value={loc.Name}> {loc.Name} </MenuItem> ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
             <TextField label="Mã Điểm đi (Nhập tay)" name="fromShort" value={formData.fromShort} onChange={handleChange} fullWidth required margin="normal" />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth margin="normal" required disabled={loadingLocations}> {/* <<< THÊM FormControl */}
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+            <FormControl fullWidth margin="normal" required disabled={loadingLocations}>
               <InputLabel id="to-label">Điểm đến</InputLabel>
               <Select labelId="to-label" id="to" name="to" value={formData.to} label="Điểm đến" onChange={handleSelectChange} >
                 <MenuItem value="" disabled> {loadingLocations ? 'Đang tải...' : '-- Chọn Điểm Đến --'} </MenuItem>
                 {!loadingLocations && locations.map((loc) => ( <MenuItem key={loc.Id} value={loc.Name}> {loc.Name} </MenuItem> ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
             <TextField label="Mã Điểm đến (Nhập tay)" name="toShort" value={formData.toShort} onChange={handleChange} fullWidth required margin="normal" />
-          </Grid>
+          </Box>
 
-          {/* Thông tin khác */}
-          <Grid item xs={12} sm={4}> <FormControl fullWidth margin="normal" required> <InputLabel id="classSeat-label">Hạng ghế</InputLabel> <Select labelId="classSeat-label" id="classSeat" name="classSeat" value={formData.classSeat} label="Hạng ghế" onChange={handleSelectChange} > <MenuItem value="Economy Class">Economy Class</MenuItem> <MenuItem value="Business Class">Business Class</MenuItem> <MenuItem value="First Class">First Class</MenuItem> </Select> </FormControl> </Grid>
-          <Grid item xs={12} sm={4}> <TextField label="Tổng số ghế" name="numberSeat" type="number" value={formData.numberSeat} onChange={handleChange} fullWidth required margin="normal" InputProps={{ inputProps: { min: 1 } }} /> </Grid>
-          <Grid item xs={12} sm={4}> <TextField label="Giá vé (VNĐ)" name="price" type="number" value={formData.price} onChange={handleChange} fullWidth required margin="normal" InputProps={{ inputProps: { min: 0 } }} /> </Grid>
+          {/* Thông tin khác - mỗi ô chiếm 1/3 chiều rộng trên màn hình sm trở lên */}
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}>
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel id="classSeat-label">Hạng ghế</InputLabel>
+              <Select labelId="classSeat-label" id="classSeat" name="classSeat" value={formData.classSeat} label="Hạng ghế" onChange={handleSelectChange} >
+                <MenuItem value="Economy Class">Economy Class</MenuItem>
+                <MenuItem value="Business Class">Business Class</MenuItem>
+                <MenuItem value="First Class">First Class</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}>
+            <TextField label="Tổng số ghế" name="numberSeat" type="number" value={formData.numberSeat} onChange={handleChange} fullWidth required margin="normal" InputProps={{ inputProps: { min: 1 } }} />
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)' } }}>
+            <TextField label="Giá vé (VNĐ)" name="price" type="number" value={formData.price} onChange={handleChange} fullWidth required margin="normal" InputProps={{ inputProps: { min: 0 } }} />
+          </Box>
 
-          {/* Nút Submit */}
-          <Grid item xs={12} sx={{ mt: 2, textAlign: 'right' }}> <Button type="submit" variant="contained" color="primary" disabled={isLoading} startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null} > {isLoading ? 'Đang tạo...' : 'Tạo chuyến bay'} </Button> </Grid>
-        </Grid>
+          {/* Nút Submit - chiếm toàn bộ chiều rộng */}
+          <Box sx={{ width: '100%', mt: 2, textAlign: 'right' }}>
+            <Button type="submit" variant="contained" color="primary" disabled={isLoading} startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null} >
+              {isLoading ? 'Đang tạo...' : 'Tạo chuyến bay'}
+            </Button>
+          </Box>
+
+        </Box> {/* Kết thúc Box container flex */}
       </form>
     </Box>
   );
